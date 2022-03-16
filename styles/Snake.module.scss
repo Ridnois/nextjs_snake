@@ -1,0 +1,31 @@
+.snake {
+  margin: auto;
+  &__container {
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+  }
+  &__row {
+    justify-content: center;
+    display: flex;
+    flex-direction: row;
+  }
+}
+
+.cell {
+  background: rgb(190,190,190);
+  height: 1em;
+  width: 1em;
+  text-align: center;
+  margin: 1px;
+  line-height: 1em;
+  &--empty{
+    background: rgb(190, 190, 190);
+  }
+  &--snake {
+    background: rgb(100, 190, 190);
+  }
+  &--food {
+    background: rgb(190, 100, 190);
+  }
+}
