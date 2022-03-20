@@ -6,6 +6,7 @@ import styles from '../styles/Snake.module.scss'
 type Point = {
   x: number
   y: number
+  status: 'empty' | 'snake' | 'food'
 }
 
 interface ISnake {
@@ -13,11 +14,7 @@ interface ISnake {
   body: Point[]
 }
 
-interface ICell extends Point {
-  status: 'empty' | 'snake' | 'food'
-}
-
-type IRow = ICell[]
+type IRow = Point[]
 type IGrid = IRow[]
 
 export const Grid = (size: number): IGrid => {
@@ -36,21 +33,21 @@ export const Grid = (size: number): IGrid => {
   return grid
 }
 
-export const CellBox: React.FC<ICell> = ({ status }) => {
+export const CellBox: React.FC<Point> = ({ status }) => {
   return <div className={`${styles.cell} ${styles[`cell--${status}`]}`}></div>
 }
 
 export const CellRow: React.FC<{ row: IRow }> = ({ row }) => {
   return (
     <div className={styles['snake__row']}>
-      {row.map((cell: ICell) => (
+      {row.map((cell: Point) => (
         <CellBox key={`${cell.x}${cell.y}`} {...cell} />
       ))}
     </div>
   )
 }
 
-export const drawPoint = (grid: IGrid, cell: ICell) => {
+export const drawPoint = (grid: IGrid, cell: Point) => {
   return grid.map((row, index) => {
     if (index === cell.y) {
       row.map((c, index) => {
@@ -87,25 +84,36 @@ export const cleanSnakeTrack = (grid: IGrid) => {
     })
   )
 }
-// Move body of the snake
-export const moveSnake = (snake: ISnake, mustGrow = false) => {
-  let head = snake.body[0]
-  let newHead = { status: 'snake', ...head }
+
+export const nextHead = (snake: ISnake) => {
+  const newHead = { ...snake.body[0] }
   switch (snake.direction) {
-    case 'up':
-      newHead.y = head.y - 1
-      break
-    case 'down':
-      newHead.y = head.y + 1
+    case 'left':
+      newHead.x -= 1
       break
     case 'right':
-      newHead.x = head.x + 1
+      newHead.x += 1
       break
-    case 'left':
-      newHead.x = head.x - 1
+    case 'up':
+      newHead.y -= 1
+      break
+    case 'down':
+      newHead.y += 1
+      break
   }
-  console.log([newHead, ...snake.body])
-  return { ...snake, body: [newHead, ...snake.body] }
+  return newHead
+}
+
+// Move body of the snake
+export const moveSnake = (snake: ISnake, mustGrow = false) => {
+  const [head, ...body] = [...snake.body]
+  let newHead = nextHead(snake)
+  const newBody = [newHead, head, ...body]
+
+  if (!mustGrow) {
+    newBody.pop()
+  }
+  return { ...snake, body: newBody }
 }
 
 export const Snake: NextPage = () => {
@@ -113,13 +121,14 @@ export const Snake: NextPage = () => {
   const [snake, setSnake] = useState<ISnake>({
     direction: 'left',
     body: [
-      { x: 16, y: 16 },
-      { x: 17, y: 16 },
-      { x: 18, y: 16 },
+      { status: 'snake', x: 16, y: 16 },
+      { status: 'snake', x: 17, y: 16 },
+      { status: 'snake', x: 18, y: 16 },
     ],
   })
   const move = () => {
-    setSnake((snake) => moveSnake(snake))
+    const { x, y } = nextHead(snake)
+    setSnake((snake) => moveSnake(snake, grid[y][x].status === 'food'))
   }
   const setDirection = (direction: 'right' | 'left' | 'up' | 'down') => {
     console.log(direction)
@@ -131,7 +140,7 @@ export const Snake: NextPage = () => {
   useEffect(() => {
     cleanSnakeTrack(grid)
     snake.body.map((cell) => {
-      setGrid((grid) => drawPoint(grid, { status: 'snake', ...cell }))
+      setGrid((grid) => drawPoint(grid, { ...cell }))
     })
   }, [snake])
   return (
