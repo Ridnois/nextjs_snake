@@ -1,5 +1,5 @@
 import type { NextPage } from 'next'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, KeyboardEventHandler } from 'react'
 import Head from 'next/head'
 import styles from '../styles/Snake.module.scss'
 
@@ -118,6 +118,7 @@ export const moveSnake = (snake: ISnake, mustGrow = false) => {
 
 export const Snake: NextPage = () => {
   const [grid, setGrid] = useState(Grid(32))
+  const [dead, setDead] = useState(false)
   const [snake, setSnake] = useState<ISnake>({
     direction: 'left',
     body: [
@@ -126,29 +127,61 @@ export const Snake: NextPage = () => {
       { status: 'snake', x: 18, y: 16 },
     ],
   })
+
+  const control: KeyboardEventHandler<HTMLDivElement> = (e) => {
+    console.log('foo')
+    switch (e.code) {
+      case 'ArrowLeft':
+        setDirection('left')
+        break
+      case 'ArrowRight':
+        setDirection('right')
+        break
+      case 'ArrowUp':
+        setDirection('up')
+        break
+      case 'ArrowDown':
+        setDirection('down')
+        break
+      case 'Space':
+        move()
+        break
+      default:
+        return
+    }
+  }
+
   const move = () => {
     const { x, y } = nextHead(snake)
-    setSnake((snake) => moveSnake(snake, grid[y][x].status === 'food'))
+    const nextCell: any = grid[y][x] ?? false
+    if (!nextCell && nextCell?.status !== 'snake') {
+      setDead(true)
+      return
+    }
+    setSnake((snake) => moveSnake(snake, nextCell.status === 'food'))
   }
+
   const setDirection = (direction: 'right' | 'left' | 'up' | 'down') => {
-    console.log(direction)
-    setSnake((snake: ISnake) => ({ ...snake, direction } as any))
+    setSnake((snake: ISnake) => ({ ...snake, direction }))
   }
+
   useEffect(() => {
     putRandomFood(grid)
-  }, [])
+  }, [snake.body.length])
+
   useEffect(() => {
     cleanSnakeTrack(grid)
     snake.body.map((cell) => {
       setGrid((grid) => drawPoint(grid, { ...cell }))
     })
   }, [snake])
+
   return (
-    <div className={styles.snake}>
+    <div className={styles.snake} onKeyDown={(e) => control(e)} tabIndex={0}>
       <Head>
         <title>Snake - Ridnois</title>
       </Head>
-      <p>Snake</p>
+      <p>Snake: {dead ? 'dead' : 'alive'}</p>
       <button onClick={move}>Move Snake</button>
       <button onClick={() => setDirection('up')}>Up</button>
       <button onClick={() => setDirection('down')}>Down</button>
